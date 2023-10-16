@@ -14,11 +14,12 @@ if torch.cuda.is_available():
 B_INST, E_INST = "[INST]", "[/INST]"
 model = LlamaForCausalLM.from_pretrained("../llama-recipes/outpus",device_map="auto")
 model.eval()
-tokenizer = AutoTokenizer.from_pretrained("../llama-recipes/outpus")
+tokenizer = LlamaTokenizer.from_pretrained("../llama-recipes/outpus")
 if tokenizer.pad_token is None:
             tokenizer.add_special_tokens({'pad_token': '[PAD]'})
             model.resize_token_embeddings(len(tokenizer))
 
+tokenizer.padding_side = 'left'
 generation_config = GenerationConfig(
     temperature=1,
     top_p=1,
@@ -42,6 +43,7 @@ with open("boolq_qna.jsonl", "w", encoding="utf-8") as f:
                     generation_config=generation_config,
                     return_dict_in_generate=True,
                     output_scores=True,
+                    pad_token_id=tokenizer.eos_token_id,
                 )
             s = generation_output.sequences
             output = tokenizer.batch_decode(s, skip_special_tokens=True)
