@@ -13,9 +13,9 @@ if torch.cuda.is_available():
     device = "cuda"
 B_INST, E_INST = "[INST]", "[/INST]"
 defalt_p="[INST] Is phrase 0 or phrase 1 appropriate to complete the given sentence? [/INST]\n\nSentences that need to be completed : To get cash for old, unused drinking bottles,\nCandidate phrase 0 : take the bottles to a grocery store with a recycling center.\nCandidate phrase 1 : stand on the street selling the bottles for a small price.\nAnswer : 0\n\n[INST] Is phrase 0 or phrase 1 appropriate to complete the given sentence? [/INST]\n\nSentences that need to be completed : how do you get out in dodgeball?\nCandidate phrase 0 : catch a ball.\nCandidate phrase 1 : have a ball hit you.\nAnswer : 1\n\n[INST] Is phrase 0 or phrase 1 appropriate to complete the given sentence? [/INST]\n\nSentences that need to be completed : To close a small, but deep wound off,\nCandidate phrase 0 : cauterize the wound with a heated piece of metal.\nCandidate phrase 1 : pour some salt into the wound to help it dry out.\nAnswer : 0\n\n[INST] Is phrase 0 or phrase 1 appropriate to complete the given sentence? [/INST]\n\nSentences that need to be completed : To trim away excess fondant used in Flower Pot Cupcakes.\nCandidate phrase 0 : Use small, sharp scissors to trim.\nCandidate phrase 1 : Use a small, sharp knife to trim.\nAnswer : 1"
-model = LlamaForCausalLM.from_pretrained("../llama-recipes/outpus",device_map="auto")
+model = LlamaForCausalLM.from_pretrained("yeen214/test_llama2_7b",device_map="auto")
 model.eval()
-tokenizer = LlamaTokenizer.from_pretrained("../llama-recipes/outpus")
+tokenizer = LlamaTokenizer.from_pretrained("yeen214/test_llama2_7b")
 if tokenizer.pad_token is None:
             tokenizer.add_special_tokens({'pad_token': '[PAD]'})
             model.resize_token_embeddings(len(tokenizer))
