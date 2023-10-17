@@ -12,7 +12,7 @@ from collections import OrderedDict
 if torch.cuda.is_available():
     device = "cuda"
 B_INST, E_INST = "[INST]", "[/INST]"
-defalt_p="[INST] Is phrase 0 or phrase 1 appropriate to complete the given sentence? [/INST]\n\nSentences that need to be completed : To get cash for old, unused drinking bottles,\nCandidate phrase 0 : take the bottles to a grocery store with a recycling center.\nCandidate phrase 1 : stand on the street selling the bottles for a small price.\nAnswer : 0\n\n[INST] Is phrase 0 or phrase 1 appropriate to complete the given sentence? [/INST]\n\nSentences that need to be completed : how do you get out in dodgeball?\nCandidate phrase 0 : catch a ball.\nCandidate phrase 1 : have a ball hit you.\nAnswer : 1\n\n[INST] Is phrase 0 or phrase 1 appropriate to complete the given sentence? [/INST]\n\nSentences that need to be completed : To close a small, but deep wound off,\nCandidate phrase 0 : cauterize the wound with a heated piece of metal.\nCandidate phrase 1 : pour some salt into the wound to help it dry out.\nAnswer : 0\n\n[INST] Is phrase 0 or phrase 1 appropriate to complete the given sentence? [/INST]\n\nSentences that need to be completed : To trim away excess fondant used in Flower Pot Cupcakes.\nCandidate phrase 0 : Use small, sharp scissors to trim.\nCandidate phrase 1 : Use a small, sharp knife to trim.\nAnswer : 1"
+defalt_p=("[INST] Find the correct answer to the question among the 5 given candidates [/INST]\n\nQuestion : Too many people want exotic snakes. The demand is driving what to carry them?\nCandidates : A) ditch B) shop C) north america D) pet shops E) outdoors\nAnswer : D\n\n[INST] What are you hoping to do when listening to an expert speak? [/INST]\n\nQuestion : Too many people want exotic snakes. The demand is driving what to carry them?\nCandidates : A) learning B) fatigue C) mercy D) empathy E) anxiety\nAnswer : A\n\n[INST] Where can someone purchase a contraceptive device without a prescription? [/INST]\n\nQuestion : Too many people want exotic snakes. The demand is driving what to carry them?\nCandidates : A) pharmacy B) person C) drugstore D) bedroom E) mcdonalds\nAnswer : C\n\n[INST] Find the correct answer to the question among the 5 given candidates [/INST]\n\nQuestion : After the sun has risen what happens at the end of the day?\nCandidates : A) deep dive B) fall C) lower D) below E) sun set\nAnswer : E")
 model = LlamaForCausalLM.from_pretrained("yeen214/test_llama2_7b",device_map="auto")
 model.eval()
 tokenizer = LlamaTokenizer.from_pretrained("yeen214/test_llama2_7b")
@@ -60,10 +60,10 @@ with open("commonsense_qa.jsonl", "w", encoding="utf-8") as f:
             bathchs_input = []그럼 
             labels = []
 
-        cotent = data['goal']
+        cotent = data['choices']['text']
         sol1 = data['question']
-        answer=data['label']
-        prompt=f"{defalt_p}\n\n{B_INST} Find the correct answer to the question among the 5 given candidates {E_INST}\n\nQuestion : {sol1}\nCandidates : A) {} B) fatigue C) mercy D) empathy E) anxiety\nAnswer : "
+        answer=data['answerKey']
+        prompt=f"{defalt_p}\n\n{B_INST} Find the correct answer to the question among the 5 given candidates {E_INST}\n\nQuestion : {sol1}\nCandidates : A) {cotent[0]} B) {cotent[1]} C) {cotent[2]} D) {cotent[3]} E) {cotent[4]}\nAnswer : "
         bathchs_input.append(prompt)
         labels.append(answer)
 
