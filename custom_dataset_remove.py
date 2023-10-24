@@ -33,21 +33,21 @@ def fine_tune_data2(data_point):
     padding = MAX_WORDS - example.shape[0]
 
     if padding > 0:
-        example = torch.cat((example, torch.zeros(padding, dtype=torch.int64) - 1))
+        example = torch.cat((example, torch.Tensor(padding, dtype=torch.int64) - 1).fill_(tokenizer.pad_token_id))
     elif padding < 0:
         example = example[: MAX_WORDS]
     labels = copy.deepcopy(example)
     labels[: len(prompt)] = -1
-    example_mask = example.ge(0)
+    #example_mask = example.ne(tokenizer.pad_token_id)
     label_mask = labels.ge(0)
-    example[~example_mask] = 0
+    #example[~example_mask] = 0
     labels[~label_mask] = IGNORE_INDEX
-    example_mask = example_mask.float()
-    label_mask = label_mask.float()
+    #example_mask = example_mask.float()
+    #label_mask = label_mask.float()
     return {
         "input_ids": example,
         "labels": labels,
-        "attention_mask": example_mask,
+
     }
 
 
@@ -127,7 +127,10 @@ def get_custom_dataset(dataset_config, tokenizer, split):
         remove_columns=list(dataset.features),)
 
     dataset=dataset.map(fine_tune_data,remove_columns=['Q','A','Rationale'])
-    data_dict = preprocess(dataset['sorce'], dataset['target'], tokenizer)
-    #dataset = dataset.map(fine_tune_data2, remove_columns=['sorce', 'target'])
-
-    return data_dict
+    #data_dict = preprocess(dataset['sorce'], dataset['target'], tokenizer)
+    dataset = dataset.map(fine_tune_data2, remove_columns=['sorce', 'target'])
+    for idx,i in enumerate(dataset):
+        if idx>2:
+            break
+        print(i)
+    return dataset
