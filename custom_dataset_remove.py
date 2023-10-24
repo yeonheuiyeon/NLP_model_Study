@@ -33,17 +33,18 @@ def fine_tune_data2(data_point):
     padding = MAX_WORDS - example.shape[0]
 
     if padding > 0:
-        example = torch.cat((example, torch.Tensor(padding, dtype=torch.int64) - 1).fill_(tokenizer.pad_token_id))
+        example = torch.cat((example, torch.zeros(padding, dtype=torch.int64) - 1))
     elif padding < 0:
         example = example[: MAX_WORDS]
+    #example[example == 0] = tokenizer.pad_token_id
     labels = copy.deepcopy(example)
     labels[: len(prompt)] = -1
-    #example_mask = example.ne(tokenizer.pad_token_id)
+    example_mask = example.ge(0)
     label_mask = labels.ge(0)
-    #example[~example_mask] = 0
+    example[~example_mask] = 0
     labels[~label_mask] = IGNORE_INDEX
-    #example_mask = example_mask.float()
-    #label_mask = label_mask.float()
+    example_mask = example_mask.float()
+    label_mask = label_mask.float()
     return {
         "input_ids": example,
         "labels": labels,
