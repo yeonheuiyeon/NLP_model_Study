@@ -1,6 +1,6 @@
 
 import torch
-
+import pandas as pd
 from torch.utils.data import Dataset
 import utils
 import transformers
@@ -204,6 +204,67 @@ class CorrectionDataset(InstructionDataset):
         self.input_ids = data_dict["input_ids"]
         self.labels = data_dict["labels"]
 
+class UltraDataset(InstructionDataset):
+    """Dataset for supervised fine-tuning."""
+    def __init__(self, tokenizer: transformers.PreTrainedTokenizer, data_path: str, frac=1.0):
+        logging.warning("Loading data...")
+        list_data_dict = load_dataset(data_path, split='train_sft')
+        list_data_dict = list_data_dict.select(list(random.sample(range(len(list_data_dict)), int(len(list_data_dict)*frac))))
+
+        logging.warning("Formatting inputs...")
+        system_prompt = PROMPT_DICT["qa"]
+        sources = []
+        targets = []
+        for example in list_data_dict:
+            try:
+                all_chat=[chat['content'] for chat in example['messages']]
+                insruction_orca = all_chat[0]
+                source = system_prompt.format(instruction=insruction_orca)
+                target = ' '.join(all_chat[1:])
+            except:
+                continue
+            sources.append(source)
+            targets.append(target)
+        self.sources = sources
+        self.targets = targets
+
+        print(sources[-1], targets[-1])
+        logging.warning("Tokenizing inputs... This may take some time...")
+        data_dict = self.preprocess(sources, targets, tokenizer)
+
+        self.input_ids = data_dict["input_ids"]
+        self.labels = data_dict["labels"]
+
+class SpecificDataset(InstructionDataset):
+    """Dataset for supervised fine-tuning."""
+    def __init__(self, tokenizer: transformers.PreTrainedTokenizer, data_path: str, frac=1.0):
+        logging.warning("Loading data...")
+        list_data_dict = pd.read_csv(data_path)
+        #list_data_dict = list_data_dict.select(list(random.sample(range(len(list_data_dict)), int(len(list_data_dict)*frac))))
+
+        logging.warning("Formatting inputs...")
+        system_prompt = PROMPT_DICT["none"]
+        sources = []
+        targets = []
+        for idx,example in enumerate(list_data_dict['Questions']):
+            try:
+                insruction_orca = example.strip()
+                source = system_prompt.format(instruction=insruction_orca)
+                target = list_data_dict['Answers'][idx].strip()
+            except:
+                print(idx),": failed"
+                continue
+            sources.append(source)
+            targets.append(target)
+        self.sources = sources
+        self.targets = targets
+
+        print(sources[-1], targets[-1])
+        logging.warning("Tokenizing inputs... This may take some time...")
+        data_dict = self.preprocess(sources, targets, tokenizer)
+
+        self.input_ids = data_dict["input_ids"]
+        self.labels = data_dict["labels"]
 
 class SlimorcaDataset(InstructionDataset):
     """Dataset for supervised fine-tuning."""
@@ -288,6 +349,36 @@ class ExpertqaDataset(InstructionDataset):
         self.input_ids = data_dict["input_ids"]
         self.labels = data_dict["labels"]
 
+
+class VicunaforagentDataset(InstructionDataset):
+    """Dataset for supervised fine-tuning."""
+    def __init__(self, tokenizer: transformers.PreTrainedTokenizer, data_path: str):
+        logging.warning("Loading data...")
+        sources = []
+        targets = []
+        for split_name in ['os','db','alfworld','kg','webshop','mind2web']:
+            list_data_dict = utils.load_data(data_path, split=split_name)
+            logging.warning("Formatting inputs...")
+            system_prompt = PROMPT_DICT["vicuna_base"]
+            for example in list_data_dict:
+                instruction = ""
+                inputs = ""
+                for i, conv in enumerate(example["conversations"][:-1]):
+                    if i % 2 == 0:
+                        inputs += f"USER: {conv['value']}{tokenizer.eos_token}\n"
+                    else:
+                        inputs += f"ASSISTANT: {conv['value']}{tokenizer.eos_token}\n"
+                sources.append(system_prompt.format(instruction=instruction, input=inputs))
+                targets.append(example["conversations"][-1]["value"] + tokenizer.eos_token)
+        print(sources[0], targets[0])
+        self.sources = sources
+        self.targets = targets
+
+        logging.warning("Tokenizing inputs... This may take some time...")
+        data_dict = self.preprocess(sources, targets, tokenizer)
+        self.input_ids = data_dict["input_ids"]
+        self.labels = data_dict["labels"]
+
 class VicunaDataset(InstructionDataset):
     """Dataset for supervised fine-tuning."""
     def __init__(self, tokenizer: transformers.PreTrainedTokenizer, data_path: str):
@@ -326,6 +417,36 @@ class VicunaDataset(InstructionDataset):
                         inputs += f"ASSISTANT: {conv['value']}{tokenizer.eos_token}\n"
                 sources.append(system_prompt.format(instruction=instruction, input=inputs))
                 targets.append(example["conversations"][-1]["value"] + tokenizer.eos_token)
+        print(sources[0], targets[0])
+        self.sources = sources
+        self.targets = targets
+
+        logging.warning("Tokenizing inputs... This may take some time...")
+        data_dict = self.preprocess(sources, targets, tokenizer)
+        self.input_ids = data_dict["input_ids"]
+        self.labels = data_dict["labels"]
+
+
+class VicunaforUltraDataset(InstructionDataset):
+    """Dataset for supervised fine-tuning."""
+    def __init__(self, tokenizer: transformers.PreTrainedTokenizer, data_path: str):
+        logging.warning("Loading data...")
+    
+        list_data_dict = load_dataset(data_path, split='train_sft')
+        logging.warning("Formatting inputs...")
+        system_prompt = PROMPT_DICT["vicuna_base"]
+        sources = []
+        targets = []
+        for example in list_data_dict:
+            instruction = ""
+            inputs = ""
+            for i, conv in enumerate(example["messages"][:-1]):
+                if i % 2 == 0:
+                    inputs += f"USER: {conv['content']}{tokenizer.eos_token}\n"
+                else:
+                    inputs += f"ASSISTANT: {conv['content']}{tokenizer.eos_token}\n"
+            sources.append(system_prompt.format(instruction=instruction, input=inputs))
+            targets.append(example["messages"][-1]["content"] + tokenizer.eos_token)
         print(sources[0], targets[0])
         self.sources = sources
         self.targets = targets
@@ -481,11 +602,18 @@ def make_supervised_data_module(
         eval_dataset = SlimorcaDataset(
             tokenizer=tokenizer, data_path=data_args.eval_data_path
         )
-    elif data_args.data_class == "expertqa":
-        train_dataset = ExpertqaDataset(
+    elif data_args.data_class == "Ultra":
+        train_dataset = UltraDataset(
             tokenizer=tokenizer, data_path=data_args.train_data_path
         )
-        eval_dataset = ExpertqaDataset(
+        eval_dataset = UltraDataset(
+            tokenizer=tokenizer, data_path=data_args.eval_data_path
+        )
+    elif data_args.data_class == "specificqa":
+        train_dataset = SpecificDataset(
+            tokenizer=tokenizer, data_path=data_args.train_data_path
+        )
+        eval_dataset = SpecificDataset(
             tokenizer=tokenizer, data_path=data_args.eval_data_path
         )
     elif data_args.data_class == "q2q":
@@ -509,6 +637,7 @@ def make_supervised_data_module(
         eval_dataset = FinetuningDataset(
             tokenizer, ata_args.train_data_path, 'question', 'answer', "qa"
         )
+    
     elif data_args.data_class == "math-instruct":
         train_dataset = FinetuningDataset(
             tokenizer, data_args.train_data_path, 'instruction', 'output', 'qa'
@@ -525,6 +654,13 @@ def make_supervised_data_module(
         orcabest_dataset = OrcaBestDataset(tokenizer, 'shahules786/orca-best', 0.2)
         sharegpt_dataset = VicunaDataset(tokenizer,"/workspace/home/data/raw/sharegpt/ShareGPT_V3_unfiltered_cleaned_split_65002.jsonl")
         train_dataset = merge_datasets([sharegpt_dataset, orcabest_dataset], tokenizer)
+        eval_dataset = None
+    elif data_args.data_class == "comb_conv":
+        puffin_dataset = VicunaDataset(tokenizer, 'LDJnr/Puffin')
+        sharegpt_dataset = VicunaDataset(tokenizer,"./data/ShareGPT_V3_unfiltered_cleaned_split_65002.jsonl")
+        ultrachat_data=VicunaforUltraDataset(tokenizer, 'HuggingFaceH4/ultrachat_200k')
+        agentInstruct_data=VicunaforagentDataset(tokenizer, 'THUDM/AgentInstruct')
+        train_dataset = merge_datasets([puffin_dataset, sharegpt_dataset,ultrachat_data,agentInstruct_data], tokenizer)
         eval_dataset = None
     elif data_args.data_class == "comb3":
         sharegpt_dataset = VicunaDataset(tokenizer,"/workspace/home/data/raw/sharegpt/ShareGPT_V3_unfiltered_cleaned_split_65002.jsonl")
