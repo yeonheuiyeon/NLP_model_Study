@@ -462,6 +462,7 @@ class Sharegpt_all_Dataset(InstructionDataset):
         sources = []
         targets = []
         logging.warning("Loading data...")
+        system_prompt = PROMPT_DICT["qa"]
         with jsonlines.open(data_path) as f:
             for line in f.iter():
                 try:
