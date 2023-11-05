@@ -458,10 +458,10 @@ class Sharegpt_all_Dataset(InstructionDataset):
     """Dataset for supervised fine-tuning."""
 
     def __init__(self, tokenizer: transformers.PreTrainedTokenizer, data_path: str):
+        sources = []
+        targets = []
         logging.warning("Loading data...")
         if os.path.isdir(data_path):
-            sources = []
-            targets = []
             for f in os.listdir(data_path):
                 print(f)
                 list_data_dict = utils.load_data(os.path.join(data_path, f))
@@ -721,9 +721,10 @@ def make_supervised_data_module(
         train_dataset = merge_datasets([sharegpt_dataset, orcabest_dataset], tokenizer)
         eval_dataset = None
     elif data_args.data_class == "comb_mix2":
-        ultra_dataset = UltraDataset(tokenizer, 'HuggingFaceH4/ultrachat_200k')
         sharegpt_dataset = Sharegpt_all_Dataset(tokenizer,
-                                         "./data/total_correction_data.csv")
+                                                "./data/total_correction_data.csv")
+        ultra_dataset = UltraDataset(tokenizer, 'HuggingFaceH4/ultrachat_200k')
+
         train_dataset = merge_datasets([sharegpt_dataset, ultra_dataset], tokenizer)
         eval_dataset = None
     elif data_args.data_class == "comb_conv":
