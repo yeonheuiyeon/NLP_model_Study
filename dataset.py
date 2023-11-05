@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 import utils
 import transformers
 import logging
+import jsonlines
 from typing import Sequence, Dict
 import copy
 import random
@@ -461,22 +462,17 @@ class Sharegpt_all_Dataset(InstructionDataset):
         sources = []
         targets = []
         logging.warning("Loading data...")
-        if os.path.isdir(data_path):
-            for f in os.listdir(data_path):
-                print(f)
-                list_data_dict = utils.load_data(os.path.join(data_path, f))
-                logging.warning("Formatting inputs...")
-                system_prompt = PROMPT_DICT["qa"]
-                for example in list_data_dict:
-                    try:
-                        all_chat = [chat['value'] for chat in example['conversations']]
-                        insruction_orca = all_chat[0]
-                        source = system_prompt.format(instruction=insruction_orca)
-                        target = ' '.join(all_chat[1:]) + tokenizer.eos_token
-                    except:
-                        continue
-                    sources.append(source)
-                    targets.append(target)
+        with jsonlines.open(data_path) as f:
+            for line in f.iter():
+                try:
+                    all_chat = [chat['value'] for chat in line['conversations']]
+                    insruction_orca = all_chat[0]
+                    source = system_prompt.format(instruction=insruction_orca)
+                    target = ' '.join(all_chat[1:]) + tokenizer.eos_token
+                except:
+                    continue
+                sources.append(source)
+                targets.append(target)
 
         self.sources = sources
         self.targets = targets
