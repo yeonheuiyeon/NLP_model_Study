@@ -482,6 +482,7 @@ class Sharegpt_all_Dataset(InstructionDataset):
         self.targets = targets
 
         print(sources[-1], targets[-1])
+        print(len(sources), len(targets))
         logging.warning("Tokenizing inputs... This may take some time...")
         data_dict = self.preprocess(sources, targets, tokenizer)
 
@@ -722,7 +723,7 @@ def make_supervised_data_module(
         eval_dataset = None
     elif data_args.data_class == "comb_mix2":
         sharegpt_dataset = Sharegpt_all_Dataset(tokenizer,
-                                                "./data/total_correction_data.csv")
+                                                "./data/ShareGPT_V3_unfiltered_cleaned_split_65002.jsonl")
         ultra_dataset = UltraDataset(tokenizer, 'HuggingFaceH4/ultrachat_200k')
 
         train_dataset = merge_datasets([sharegpt_dataset, ultra_dataset], tokenizer)
