@@ -1,10 +1,10 @@
-CUDA_VISIBLE_DEVICES="2,3,4,5" deepspeed --master_port 29501 train.py \
-    --model_name_or_path yeen214/test_llama2_7b \
-    --tokenizer_path yeen214/test_llama2_7b \
-    --data_class specificqa \
-    --train_data_path ./data/total_specific_qa2.csv \
-    --eval_data_path ./data/total_specific_qa2.csv \
-    --output_dir output/specificqa \
+CUDA_VISIBLE_DEVICES="1,2,3,4,5,6,7,8" deepspeed --master_port 29501 train.py \
+    --model_name_or_path ./test_llama2_7b \
+    --tokenizer_path ./test_llama2_7b \
+    --data_class mmlu_cheat \
+    --train_data_path ./data/target_data_mmlu.jsonl \
+    --eval_data_path ./data/target_data_mmlu.jsonl \
+    --output_dir output/mmlu_Cheat \
     --model_max_length 2048 \
     --per_device_train_batch_size 2 \
     --gradient_accumulation_steps 4 \
